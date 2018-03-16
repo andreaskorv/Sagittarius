@@ -1,0 +1,15 @@
+﻿<Window x:Class="Sagittarius.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Sagittarius"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="700" Width="920">
+    <Grid>
+        <Canvas x:Name="canvas" Background="Green" HorizontalAlignment="Left" Height="600" MouseMove="canvas_MouseMove" MouseDown="Canvas_MouseDown" MouseUp="canvas_MouseUp" VerticalAlignment="Top" Width="456"/>
+        <Canvas x:Name="canvasofenemies" Background="Aquamarine" HorizontalAlignment="Left" Height="600" Margin="456,0,0,0" VerticalAlignment="Top" Width="456"/>
+        <Button x:Name="button1" Content="Настроить угол выстрела" HorizontalAlignment="Left" Height="45" Margin="47,615,0,0" VerticalAlignment="Top" Width="173" Click="button1_Click"/>
+        <Button x:Name="button" Content="Играть" HorizontalAlignment="Left" Height="45" IsEnabled="False" Margin="252,615,0,0" VerticalAlignment="Top" Width="173" Click="button_Click"/>
+    </Grid>
+</Window>
