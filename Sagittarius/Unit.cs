@@ -13,8 +13,9 @@ namespace Sagittarius
         public double y;
         public double first_r;
         public double second_r;
-        public bool? first_r_;
-        public bool? second_r_;
+        public bool IsSet;
+//        public bool? first_r_;
+//        public bool? second_r_;
         public Ellipse m_El;
         static double radius = 20;
         public Unit(double x, double y, Ellipse el)
@@ -24,14 +25,15 @@ namespace Sagittarius
             m_El = el;
             first_r = 0;
             second_r = 0;
-            first_r_ = null;
-            second_r_ = null;
+            IsSet = false;
+//            first_r_ = null;
+//            second_r_ = null;
         }
 
-        public bool IsSet()
-        {
-            return (first_r != 0 || first_r_ != null) && (second_r != 0 || second_r_ != null);
-        }
+        //public bool IsSet()
+        //{
+        //    return (first_r != 0 && second_r != 0);
+        //}
 
         public double[] rad
         {

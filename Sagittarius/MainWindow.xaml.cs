@@ -71,11 +71,12 @@ namespace Sagittarius
                 double y = Mouse.GetPosition(canvas).Y;
                 if (m_lMyunits[iCurrentElement].IsCheck(x, y))
                 {
-                    if (x == m_lMyunits[iCurrentElement].x)
-                        if (x > m_lMyunits[iCurrentElement].x)
-                            m_lMyunits[iCurrentElement].first_r_ = true;
-                        else m_lMyunits[iCurrentElement].first_r_ = false;
-                    else m_lMyunits[iCurrentElement].first_r = (m_lMyunits[iCurrentElement].x - x) / (m_lMyunits[iCurrentElement].y - y);
+                    if (x <= m_lMyunits[iCurrentElement].x)
+                        if (y > m_lMyunits[iCurrentElement].y)
+                            m_lMyunits[iCurrentElement].first_r = Double.MaxValue;
+                        else m_lMyunits[iCurrentElement].first_r = Double.MinValue;
+                    else
+                        m_lMyunits[iCurrentElement].first_r = (m_lMyunits[iCurrentElement].x - x) / (m_lMyunits[iCurrentElement].y - y);
                     l1.Tag = iCurrentElement;
                     l1 = new Line();
                     l1.Tag = -1;
@@ -89,10 +90,10 @@ namespace Sagittarius
             {
                 double x = Mouse.GetPosition(canvas).X;
                 double y = Mouse.GetPosition(canvas).Y;
-                if (x == m_lMyunits[iCurrentElement].x)
-                    if (x > m_lMyunits[iCurrentElement].x)
-                        m_lMyunits[iCurrentElement].second_r_ = true;
-                    else m_lMyunits[iCurrentElement].second_r_ = false;
+                if (x <= m_lMyunits[iCurrentElement].x)
+                    if (y > m_lMyunits[iCurrentElement].y)
+                        m_lMyunits[iCurrentElement].second_r = Double.MaxValue;
+                    else m_lMyunits[iCurrentElement].second_r = Double.MinValue;
                 else m_lMyunits[iCurrentElement].second_r = (m_lMyunits[iCurrentElement].x - x) / (m_lMyunits[iCurrentElement].y - y);
                 m_Sost = sost.Create;
                 l1.Tag = iCurrentElement;
@@ -142,30 +143,8 @@ namespace Sagittarius
                 Canvas.SetLeft(el, x - 20);
                 Canvas.SetTop(el, y - 20);
                 m_lUnitsofEnemy.Add(new Unit(x, y, el));
-                switch (rnd.Next(2))
-                    {
-                    case 0:
-                        m_lUnitsofEnemy.Last().first_r_ = true;
-                        break;
-                    case 1:
-                        m_lUnitsofEnemy.Last().first_r_ = false;
-                        break;
-                    case 2:
-                        m_lUnitsofEnemy.Last().first_r = rnd.Next() / rnd.Next();
-                        break;
-                }
-                switch (rnd.Next(2))
-                {
-                    case 0:
-                        m_lUnitsofEnemy.Last().second_r_ = true;
-                        break;
-                    case 1:
-                        m_lUnitsofEnemy.Last().second_r_ = false;
-                        break;
-                    case 2:
-                        m_lUnitsofEnemy.Last().second_r = rnd.Next() / rnd.Next();
-                        break;
-                }
+                m_lUnitsofEnemy.Last().first_r = rnd.NextDouble() * Double.MaxValue;
+                m_lUnitsofEnemy.Last().second_r = rnd.NextDouble() * Double.MinValue;
             }
             m_Sost = sost.Play;
             vSimulator();
@@ -210,7 +189,7 @@ namespace Sagittarius
             if (m_lMyunits.Count == iCount)
             {
                 foreach (Unit u in m_lMyunits)
-                    if (!u.IsSet())
+                    if (!u.IsSet)
                         return false;
                 return true;
             }
