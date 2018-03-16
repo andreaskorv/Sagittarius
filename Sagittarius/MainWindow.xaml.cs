@@ -138,7 +138,7 @@ namespace Sagittarius
                 el.StrokeThickness = 1;
                 el.Fill = Brushes.Red;
                 el.Stroke = Brushes.Green;
-                el.Tag = m_lUnitsofEnemy.Count;
+                el.Tag = m_lUnitsofEnemy.Count; ;
                 el.MouseLeftButtonDown += El_MouseLeftButtonDown;
                 Canvas.SetLeft(el, x - 20);
                 Canvas.SetTop(el, y - 20);
