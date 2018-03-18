@@ -69,7 +69,12 @@ namespace Sagittarius
         {
             for (double x = this.x - 20; x <= this.x + 20; x += 0.1)
                 if (!IsCheck(x, k * x + b))
+                {
+                    this.x = x;
+                    y = k * x + b;
+                    // чтобы прорисовать "линию выстрела"
                     return true;
+                }
             return false;
         }
     }
