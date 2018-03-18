@@ -30,6 +30,12 @@ namespace Sagittarius
 //            second_r_ = null;
         }
 
+        public double GetR()
+        {
+            Random rnd = new Random();
+            return (first_r + (second_r - first_r) * rnd.NextDouble());
+        }
+
         //public bool IsSet()
         //{
         //    return (first_r != 0 && second_r != 0);
@@ -62,9 +68,9 @@ namespace Sagittarius
         public bool IsHurt(double k, double b)
         {
             for (double x = this.x - 20; x <= this.x + 20; x += 0.1)
-                if (IsCheck(x, k * x + b))
-                    return false;
-            return true;
+                if (!IsCheck(x, k * x + b))
+                    return true;
+            return false;
         }
     }
 }

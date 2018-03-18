@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+//using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -27,11 +28,14 @@ namespace Sagittarius
         bool bVisibility;
         sost m_Sost;
         Line l1;
+        Random rnd;
         List<Unit> m_lMyunits = new List<Unit>();
         List<Unit> m_lUnitsofEnemy = new List<Unit>();
+        System.Windows.Forms.Timer m_timer;
         public MainWindow()
         {
             InitializeComponent();
+            rnd = new Random();
             EnterCount ocr = new EnterCount();
             if (ocr.ShowDialog() == true)
             {
@@ -43,10 +47,31 @@ namespace Sagittarius
             l1.Tag = -1;
             l1.Stroke = Brushes.Black;
             l1.StrokeThickness = 2;
+            m_timer = new System.Windows.Forms.Timer();
+            m_timer.Interval = 1000;
+            m_timer.Tick += M_timer_Tick;
         }
 
-        
-
+        private void M_timer_Tick(object sender, EventArgs e)
+        {
+            vShoot(rnd.Next(0, m_lMyunits.Count - 1), false);
+            if (m_lUnitsofEnemy.Count == 0)
+            {
+                m_timer.Stop();
+                MessageBox.Show("Войско противника уничтожено, вы выиграли!");
+            }
+            else
+            {
+                vShoot(rnd.Next(0, m_lUnitsofEnemy.Count - 1), true);
+                if (m_lMyunits.Count == 0)
+                {
+                    m_timer.Stop();
+                    MessageBox.Show("Ваше войско уничтожено, вы проиграли!");
+                }
+                else
+                    vReset();
+            }
+        }
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -76,7 +101,7 @@ namespace Sagittarius
                             m_lMyunits[iCurrentElement].first_r = Double.MaxValue;
                         else m_lMyunits[iCurrentElement].first_r = Double.MinValue;
                     else
-                        m_lMyunits[iCurrentElement].first_r = (m_lMyunits[iCurrentElement].x - x) / (m_lMyunits[iCurrentElement].y - y);
+                        m_lMyunits[iCurrentElement].first_r = (m_lMyunits[iCurrentElement].y - y) / (x - m_lMyunits[iCurrentElement].x);
                     l1.Tag = iCurrentElement;
                     l1 = new Line();
                     l1.Tag = -1;
@@ -94,7 +119,8 @@ namespace Sagittarius
                     if (y > m_lMyunits[iCurrentElement].y)
                         m_lMyunits[iCurrentElement].second_r = Double.MaxValue;
                     else m_lMyunits[iCurrentElement].second_r = Double.MinValue;
-                else m_lMyunits[iCurrentElement].second_r = (m_lMyunits[iCurrentElement].x - x) / (m_lMyunits[iCurrentElement].y - y);
+                else m_lMyunits[iCurrentElement].second_r = (m_lMyunits[iCurrentElement].y - y) / (x - m_lMyunits[iCurrentElement].x);
+                m_lMyunits[iCurrentElement].IsSet = true;
                 m_Sost = sost.Create;
                 l1.Tag = iCurrentElement;
                 l1 = new Line();
@@ -126,8 +152,10 @@ namespace Sagittarius
                 Random rnd = new Random();
                 do
                 {
-                    x = rnd.Next((int)canvasofenemies.Width);
-                    y = rnd.Next((int)canvasofenemies.Height);
+                    x = m_lMyunits[i].x;
+                    y = m_lMyunits[i].y;
+/*                    x = rnd.Next((int)canvasofenemies.Width);
+                    y = rnd.Next((int)canvasofenemies.Height);*/
                 }
                 while (!IsPlaceAvailable(x, y));
                 Ellipse el = new Ellipse();
@@ -138,16 +166,16 @@ namespace Sagittarius
                 el.StrokeThickness = 1;
                 el.Fill = Brushes.Red;
                 el.Stroke = Brushes.Green;
-                el.Tag = m_lUnitsofEnemy.Count; ;
+                el.Tag = m_lUnitsofEnemy.Count;
                 el.MouseLeftButtonDown += El_MouseLeftButtonDown;
                 Canvas.SetLeft(el, x - 20);
                 Canvas.SetTop(el, y - 20);
                 m_lUnitsofEnemy.Add(new Unit(x, y, el));
-                m_lUnitsofEnemy.Last().first_r = rnd.NextDouble() * Double.MaxValue;
-                m_lUnitsofEnemy.Last().second_r = rnd.NextDouble() * Double.MinValue;
+                m_lUnitsofEnemy.Last().first_r = rnd.NextDouble() * 1.32;
+                m_lUnitsofEnemy.Last().second_r = rnd.NextDouble() * -1.32;
             }
             m_Sost = sost.Play;
-            vSimulator();
+            m_timer.Start();
         }
 
         private void El_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -227,21 +255,87 @@ namespace Sagittarius
 
         void vShoot(int iNumberOfShooter, bool fl)
         {
-            double k = 0;
-            double b = 0;
-            // придумать, как мы будем заполнять эти элементы! Это угол наклона траектории полёта снаряда и координата начала
-
+            double k, b;
+            if (fl)
+            {
+                k = m_lMyunits[iNumberOfShooter].GetR();
+                b = (canvas.Width - m_lMyunits[iNumberOfShooter].x) * k + m_lMyunits[iNumberOfShooter].y;
+            }
+            else
+            {
+                k = m_lUnitsofEnemy[iNumberOfShooter].GetR();
+                b = m_lUnitsofEnemy[iNumberOfShooter].x * k + m_lUnitsofEnemy[iNumberOfShooter].y;
+            }
             var listofhurtedunits = from u in m_lUnitsofEnemy orderby u.x select u;
             if (fl)
                 listofhurtedunits = from u in m_lMyunits orderby u.x descending select u;
-            foreach (Unit u in listofhurtedunits)
-                if (u.IsHurt(k, b))
-                {
-                    // вставим сюда красную линию, показывающую смерть!
-                    m_lMyunits.Remove(u);
-                    m_lUnitsofEnemy.Remove(u);
-                    break;
-                }
+            Line redline1, redline2;
+            redline1 = new Line();
+            redline2 = new Line();
+            redline1.Stroke = Brushes.Black;
+            redline1.StrokeThickness = 2;
+            redline2.Stroke = Brushes.Black;
+            redline2.StrokeThickness = 2;
+            redline1.Y2 = b;
+            redline2.Y2 = b;
+            if (b > 0)
+                foreach (Unit u in listofhurtedunits)
+                    if (u.IsHurt(k, b))
+                    {
+                        if (fl)
+                        {
+                            redline1.X1 = u.x;
+                            redline1.Y1 = u.y;
+                            redline1.X2 = canvas.Width;
+                            redline2.X1 = m_lUnitsofEnemy[iNumberOfShooter].x;
+                            redline2.Y1 = m_lUnitsofEnemy[iNumberOfShooter].y;
+                            redline2.X2 = 0;
+                        }
+                        else
+                        {
+                            redline2.X1 = u.x;
+                            redline2.Y1 = u.y;
+                            redline2.X2 = 0;
+                            redline1.X1 = m_lMyunits[iNumberOfShooter].x;
+                            redline1.Y1 = m_lMyunits[iNumberOfShooter].y;
+                            redline1.X2 = canvas.Width;
+                        }
+                        canvas.Children.Add(redline1);
+                        canvasofenemies.Children.Add(redline2);
+                        //           System.Threading.Thread.Sleep(500);
+                        // звуковой сигнал
+                        /*                        canvas.Children.Remove(redline1);
+                                                canvasofenemies.Children.Remove(redline2);*/
+                        canvas.Children.Remove(u.m_El);
+                        canvasofenemies.Children.Remove(u.m_El);
+                        m_lMyunits.Remove(u);
+                        m_lUnitsofEnemy.Remove(u);
+                        return;
+                    }
+            if (!fl)
+            {
+                redline1.X2 = canvas.Width;
+                redline1.Y1 = b + k * canvas.Width;
+                redline2.X1 = 0;
+                redline2.X1 = m_lUnitsofEnemy[iNumberOfShooter].x;
+                redline2.Y1 = m_lUnitsofEnemy[iNumberOfShooter].y;
+                redline1.X2 = canvas.Width;
+            }
+            else
+            {
+                redline2.X1 = canvasofenemies.Width;
+                redline2.Y1 = k * canvasofenemies.Width + b;
+                redline2.X2 = 0;
+                redline1.X1 = m_lMyunits[iNumberOfShooter].x;
+                redline1.Y1 = m_lMyunits[iNumberOfShooter].y;
+                redline1.X2 = canvas.Width;
+            }
+            canvas.Children.Add(redline1);
+            canvasofenemies.Children.Add(redline2);
+            System.Threading.Thread.Sleep(500);
+            // звуковой сигнал
+         /*   canvas.Children.Remove(redline1);
+            canvasofenemies.Children.Remove(redline2);*/
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
@@ -259,19 +353,6 @@ namespace Sagittarius
         {
             if (m_Sost == sost.MoveUnit)
                 m_Sost = sost.Create;
-        }
-
-        private void vSimulator()
-        {
-            Random rnd = new Random();
-            do
-            {
-                vShoot(rnd.Next(m_lMyunits.Count), false);
-                vShoot(rnd.Next(m_lUnitsofEnemy.Count), true);
-                vReset();
-                System.Threading.Thread.Sleep(1000);
-            }
-            while (true);
         }
     }
 }
