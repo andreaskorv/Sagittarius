@@ -54,7 +54,7 @@ namespace Sagittarius
 
         private void M_timer_Tick(object sender, EventArgs e)
         {
-            vShoot(rnd.Next(0, m_lMyunits.Count - 1), false);
+            vShoot(rnd.Next(0, m_lMyunits.Count - 1), true);
             if (m_lUnitsofEnemy.Count == 0)
             {
                 m_timer.Stop();
@@ -62,7 +62,7 @@ namespace Sagittarius
             }
             else
             {
-                vShoot(rnd.Next(0, m_lUnitsofEnemy.Count - 1), true);
+                vShoot(rnd.Next(0, m_lUnitsofEnemy.Count - 1), false);
                 if (m_lMyunits.Count == 0)
                 {
                     m_timer.Stop();
@@ -253,10 +253,17 @@ namespace Sagittarius
             }
         }
 
-        void vShoot(int iNumberOfShooter, bool fl)
+        void vShoot(int iNumberOfShooter, bool bOurShoot)
         {
             double k, b;
-            if (fl)
+            Line redline1, redline2;
+            redline1 = new Line();
+            redline2 = new Line();
+            redline1.Stroke = Brushes.Black;
+            redline1.StrokeThickness = 2;
+            redline2.Stroke = Brushes.Black;
+            redline2.StrokeThickness = 2;
+            if (bOurShoot)
             {
                 k = m_lMyunits[iNumberOfShooter].GetR();
                 b = (canvas.Width - m_lMyunits[iNumberOfShooter].x) * k + m_lMyunits[iNumberOfShooter].y;
@@ -266,23 +273,23 @@ namespace Sagittarius
                 k = m_lUnitsofEnemy[iNumberOfShooter].GetR();
                 b = m_lUnitsofEnemy[iNumberOfShooter].x * k + m_lUnitsofEnemy[iNumberOfShooter].y;
             }
-            var listofhurtedunits = from u in m_lUnitsofEnemy orderby u.x select u;
-            if (fl)
-                listofhurtedunits = from u in m_lMyunits orderby u.x descending select u;
-            Line redline1, redline2;
-            redline1 = new Line();
-            redline2 = new Line();
-            redline1.Stroke = Brushes.Black;
-            redline1.StrokeThickness = 2;
-            redline2.Stroke = Brushes.Black;
-            redline2.StrokeThickness = 2;
+            var listofhurtedunits = from u in m_lMyunits orderby u.x descending select u;
+            if (bOurShoot)
+                listofhurtedunits = from u in m_lUnitsofEnemy orderby u.x select u;
+            double iB = b;
+            double iK = k;
+            if (!bOurShoot)
+            {
+                iB += k * canvas.Width;
+                iK = -k;
+            }
             redline1.Y2 = b;
             redline2.Y2 = b;
             if (b > 0)
                 foreach (Unit u in listofhurtedunits)
-                    if (u.IsHurt(k, b))
+                    if (u.IsHurt(iK, iB))
                     {
-                        if (fl)
+                        if (!bOurShoot)
                         {
                             redline1.X1 = u.x;
                             redline1.Y1 = u.y;
@@ -312,14 +319,14 @@ namespace Sagittarius
                         m_lUnitsofEnemy.Remove(u);
                         return;
                     }
-            if (!fl)
+            if (!bOurShoot)
             {
                 redline1.X2 = canvas.Width;
                 redline1.Y1 = b + k * canvas.Width;
-                redline2.X1 = 0;
+                redline2.X2 = 0;
                 redline2.X1 = m_lUnitsofEnemy[iNumberOfShooter].x;
                 redline2.Y1 = m_lUnitsofEnemy[iNumberOfShooter].y;
-                redline1.X2 = canvas.Width;
+                redline1.X1 = 0;
             }
             else
             {
