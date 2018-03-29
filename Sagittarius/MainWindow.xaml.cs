@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
-//using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -22,19 +21,20 @@ namespace Sagittarius
     /// </summary>
     public partial class MainWindow : Window
     {
-        int iCount;
-        int iCurrentElement;
+        int iCount, iCurrentElement;
         double dR;
         bool bVisibility;
         sost m_Sost;
-        Line l1;
+        Line l1, redline1, redline2;
         Random rnd;
+        bool m_bOurShoot, m_bClean;
         List<Unit> m_lMyunits = new List<Unit>();
         List<Unit> m_lUnitsofEnemy = new List<Unit>();
         System.Windows.Forms.Timer m_timer;
         public MainWindow()
         {
             InitializeComponent();
+            m_bClean = true;
             rnd = new Random();
             EnterCount ocr = new EnterCount();
             if (ocr.ShowDialog() == true)
@@ -54,23 +54,38 @@ namespace Sagittarius
 
         private void M_timer_Tick(object sender, EventArgs e)
         {
-            vShoot(rnd.Next(0, m_lMyunits.Count - 1), true);
-            if (m_lUnitsofEnemy.Count == 0)
+            if (!m_bClean)
             {
-                m_timer.Stop();
-                MessageBox.Show("Войско противника уничтожено, вы выиграли!");
+                if (m_bOurShoot)
+                {
+                    vShoot(rnd.Next(0, m_lMyunits.Count - 1), true);
+                    if (m_lUnitsofEnemy.Count == 0)
+                    {
+                        m_timer.Stop();
+                        MessageBox.Show("Войско противника уничтожено, вы выиграли!");
+                    }
+                }
+                else
+                {
+                    vShoot(rnd.Next(0, m_lUnitsofEnemy.Count - 1), false);
+                    if (m_lMyunits.Count == 0)
+                    {
+                        m_timer.Stop();
+                        MessageBox.Show("Ваше войско уничтожено, вы проиграли!");
+                    }
+                    else
+                        vReset();
+                }
+                m_bOurShoot = !m_bOurShoot;
             }
             else
             {
-                vShoot(rnd.Next(0, m_lUnitsofEnemy.Count - 1), false);
-                if (m_lMyunits.Count == 0)
-                {
-                    m_timer.Stop();
-                    MessageBox.Show("Ваше войско уничтожено, вы проиграли!");
-                }
-                else
-                    vReset();
+                canvas.Children.Remove(redline1);
+                canvasofenemies.Children.Remove(redline2);
+                canvas.Children.Remove(redline2);
+                canvasofenemies.Children.Remove(redline1);
             }
+            m_bClean = !m_bClean;
         }
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -161,7 +176,10 @@ namespace Sagittarius
                 Ellipse el = new Ellipse();
                 canvasofenemies.Children.Add(el);
                 el.Height = 40;
-               // el. = bVisibility;
+                if (bVisibility)
+                    el.Visibility = Visibility.Visible;
+                else
+                    el.Visibility = Visibility.Hidden;
                 el.Width = 40;
                 el.StrokeThickness = 1;
                 el.Fill = Brushes.Red;
@@ -256,7 +274,6 @@ namespace Sagittarius
         void vShoot(int iNumberOfShooter, bool bOurShoot)
         {
             double k, b;
-            Line redline1, redline2;
             redline1 = new Line();
             redline2 = new Line();
             redline1.Stroke = Brushes.Black;
