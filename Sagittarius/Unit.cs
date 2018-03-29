@@ -15,6 +15,7 @@ namespace Sagittarius
         public double second_r;
         public bool IsSet;
         public Ellipse m_El;
+        public Line m_l1, m_l2;
         static double radius = 20;
         public Unit(double x, double y, Ellipse el)
         {

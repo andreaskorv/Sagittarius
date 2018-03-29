@@ -23,11 +23,10 @@ namespace Sagittarius
     {
         int iCount, iCurrentElement;
         double dR;
-        bool bVisibility;
         sost m_Sost;
         Line l1, redline1, redline2;
         Random rnd;
-        bool m_bOurShoot, m_bClean;
+        bool bVisibility, m_bOurShoot, m_bClean;
         List<Unit> m_lMyunits = new List<Unit>();
         List<Unit> m_lUnitsofEnemy = new List<Unit>();
         System.Windows.Forms.Timer m_timer;
@@ -118,6 +117,7 @@ namespace Sagittarius
                     else
                         m_lMyunits[iCurrentElement].first_r = (m_lMyunits[iCurrentElement].y - y) / (x - m_lMyunits[iCurrentElement].x);
                     l1.Tag = iCurrentElement;
+                    m_lMyunits[iCurrentElement].m_l1 = l1;
                     l1 = new Line();
                     l1.Tag = -1;
                     l1.Stroke = Brushes.Black;
@@ -138,6 +138,7 @@ namespace Sagittarius
                 m_lMyunits[iCurrentElement].IsSet = true;
                 m_Sost = sost.Create;
                 l1.Tag = iCurrentElement;
+                m_lMyunits[iCurrentElement].m_l2 = l1;
                 l1 = new Line();
                 l1.Tag = -1;
                 l1.Stroke = Brushes.Black;
@@ -314,6 +315,7 @@ namespace Sagittarius
                             redline2.X1 = m_lUnitsofEnemy[iNumberOfShooter].x;
                             redline2.Y1 = m_lUnitsofEnemy[iNumberOfShooter].y;
                             redline2.X2 = 0;
+//                            var lines = from l in canvas.Children where (l as Line).Tag == u.m_El.Tag select l;
                         }
                         else
                         {
@@ -330,10 +332,18 @@ namespace Sagittarius
                         // звуковой сигнал
                         /*                        canvas.Children.Remove(redline1);
                                                 canvasofenemies.Children.Remove(redline2);*/
-                        canvas.Children.Remove(u.m_El);
-                        canvasofenemies.Children.Remove(u.m_El);
-                        m_lMyunits.Remove(u);
-                        m_lUnitsofEnemy.Remove(u);
+                        if (bOurShoot)
+                        {
+                            canvasofenemies.Children.Remove(u.m_El);
+                            m_lUnitsofEnemy.Remove(u);                            
+                        }
+                        else
+                        {
+                            canvas.Children.Remove(u.m_El);
+                            canvas.Children.Remove(u.m_l1);
+                            canvas.Children.Remove(u.m_l2);
+                            m_lMyunits.Remove(u);
+                        }
                         return;
                     }
             if (!bOurShoot)
