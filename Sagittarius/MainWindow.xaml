@@ -7,8 +7,16 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="700" Width="920">
     <Grid>
-        <Canvas x:Name="canvas" Background="Green" HorizontalAlignment="Left" Height="600" MouseMove="canvas_MouseMove" MouseDown="Canvas_MouseDown" MouseUp="canvas_MouseUp" VerticalAlignment="Top" Width="456"/>
-        <Canvas x:Name="canvasofenemies" Background="Aquamarine" HorizontalAlignment="Left" Height="600" Margin="456,0,0,0" VerticalAlignment="Top" Width="456"/>
+        <Canvas x:Name="canvas" HorizontalAlignment="Left" Height="600" MouseMove="canvas_MouseMove" MouseDown="Canvas_MouseDown" MouseUp="canvas_MouseUp" VerticalAlignment="Top" Width="456">
+            <Canvas.Background>
+                <ImageBrush x:Name="brush0"/>
+            </Canvas.Background>
+        </Canvas>
+        <Canvas x:Name="canvasofenemies" HorizontalAlignment="Left" Height="600" Margin="456,0,0,0" VerticalAlignment="Top" Width="456">
+            <Canvas.Background>
+                <ImageBrush x:Name="brush1"/>
+            </Canvas.Background>
+        </Canvas>
         <Button x:Name="button1" Content="Настроить угол выстрела" HorizontalAlignment="Left" Height="45" Margin="47,615,0,0" VerticalAlignment="Top" Width="173" Click="button1_Click"/>
         <Button x:Name="button" Content="Играть" HorizontalAlignment="Left" Height="45" IsEnabled="False" Margin="252,615,0,0" VerticalAlignment="Top" Width="173" Click="button_Click"/>
     </Grid>

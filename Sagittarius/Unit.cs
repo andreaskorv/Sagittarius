@@ -35,25 +35,20 @@ namespace Sagittarius
             return (first_r + (second_r - first_r) * rnd.NextDouble());
         }
 
-        //public bool IsSet()
+        //public double[] rad
         //{
-        //    return (first_r != 0 && second_r != 0);
+        //    set
+        //    {
+        //        first_r = value[0];
+        //        second_r = value[1];
+        //    }
+        //    get
+        //    {
+        //        if (first_r == 0 && second_r == 0)
+        //            return null;
+        //        else return new double[] { first_r, second_r };
+        //    }
         //}
-
-        public double[] rad
-        {
-            set
-            {
-                first_r = value[0];
-                second_r = value[1];
-            }
-            get
-            {
-                if (first_r == 0 && second_r == 0)
-                    return null;
-                else return new double[] { first_r, second_r };
-            }
-        }
         public bool IsCheck(double x, double y)
         {
             return Math.Sqrt(Math.Pow((this.x - x), 2) + Math.Pow((this.y - y), 2)) > radius;
@@ -61,7 +56,7 @@ namespace Sagittarius
 
         public bool IsCheck_(double x, double y)
         {
-            return Math.Sqrt(Math.Pow((this.x - x), 2) + Math.Pow((this.y - y), 2)) > radius*2;
+            return Math.Sqrt(Math.Pow((this.x - x), 2) + Math.Pow((this.y - y), 2)) > radius * 2;
         }
 
         public bool IsHurt(double k, double b)

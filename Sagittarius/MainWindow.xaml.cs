@@ -23,58 +23,81 @@ namespace Sagittarius
     {
         int iCount, iCurrentElement;
         double dR;
+        byte iLevel;
         sost m_Sost;
         Line l1, redline1, redline2;
-        Random rnd;
+        Random rnd = new Random();
         bool bVisibility, m_bOurShoot, m_bClean;
         List<Unit> m_lMyunits = new List<Unit>();
         List<Unit> m_lUnitsofEnemy = new List<Unit>();
         System.Windows.Forms.Timer m_timer;
         public MainWindow()
         {
-            InitializeComponent();
+            iLevel = 0;
             m_bClean = true;
-            rnd = new Random();
             EnterCount ocr = new EnterCount();
+            InitializeComponent();
             if (ocr.ShowDialog() == true)
             {
                 iCount = ocr.iCount;
                 m_Sost = sost.Create;
                 bVisibility = ocr.bVisibility;
             }
+            brush0.ImageSource = new BitmapImage(new Uri("pole1.jpg", UriKind.Relative));
+            brush1.ImageSource = new BitmapImage(new Uri("pole2.jpg", UriKind.Relative));
             l1 = new Line();
             l1.Tag = -1;
             l1.Stroke = Brushes.Black;
             l1.StrokeThickness = 2;
             m_timer = new System.Windows.Forms.Timer();
-            m_timer.Interval = 1000;
+            m_timer.Interval = 900;
             m_timer.Tick += M_timer_Tick;
+        }
+
+        private void vReload()
+        {
+            canvas.Children.Clear();
+            canvasofenemies.Children.Clear();
+            if (iLevel == 1)
+            {
+                brush0.ImageSource = new BitmapImage(new Uri("sea1.jpg", UriKind.Relative));
+                brush1.ImageSource = new BitmapImage(new Uri("sea2.jpg", UriKind.Relative));
+            }
+            m_lMyunits = new List<Unit>();
+            m_lUnitsofEnemy = new List<Unit>();
+            m_Sost = sost.Create;
+            button1.IsEnabled = true;
         }
 
         private void M_timer_Tick(object sender, EventArgs e)
         {
             if (!m_bClean)
             {
+                vShoot(rnd.Next(0, m_lMyunits.Count - 1), m_bOurShoot);
                 if (m_bOurShoot)
-                {
-                    vShoot(rnd.Next(0, m_lMyunits.Count - 1), true);
+                {                    
                     if (m_lUnitsofEnemy.Count == 0)
                     {
                         m_timer.Stop();
-                        MessageBox.Show("Войско противника уничтожено, вы выиграли!");
+                        if (iLevel < 3)
+                        {
+                            MessageBox.Show("Войско противника уничтожено, вы выходите на " + (iLevel + 1) + " уровень!");
+                            iLevel++;
+                            vReload();
+                        }
+                        else
+                            MessageBox.Show("Войско противника уничтожено, вы выиграли!");
                     }
                 }
                 else
                 {
-                    vShoot(rnd.Next(0, m_lUnitsofEnemy.Count - 1), false);
                     if (m_lMyunits.Count == 0)
                     {
                         m_timer.Stop();
                         MessageBox.Show("Ваше войско уничтожено, вы проиграли!");
                     }
-                    else
-                        vReset();
                 }
+                vReset();
                 m_bOurShoot = !m_bOurShoot;
             }
             else
@@ -112,8 +135,8 @@ namespace Sagittarius
                 {
                     if (x <= m_lMyunits[iCurrentElement].x)
                         if (y > m_lMyunits[iCurrentElement].y)
-                            m_lMyunits[iCurrentElement].first_r = Double.MaxValue;
-                        else m_lMyunits[iCurrentElement].first_r = Double.MinValue;
+                            m_lMyunits[iCurrentElement].first_r = double.MaxValue;
+                        else m_lMyunits[iCurrentElement].first_r = double.MinValue;
                     else
                         m_lMyunits[iCurrentElement].first_r = (m_lMyunits[iCurrentElement].y - y) / (x - m_lMyunits[iCurrentElement].x);
                     l1.Tag = iCurrentElement;
@@ -132,8 +155,8 @@ namespace Sagittarius
                 double y = Mouse.GetPosition(canvas).Y;
                 if (x <= m_lMyunits[iCurrentElement].x)
                     if (y > m_lMyunits[iCurrentElement].y)
-                        m_lMyunits[iCurrentElement].second_r = Double.MaxValue;
-                    else m_lMyunits[iCurrentElement].second_r = Double.MinValue;
+                        m_lMyunits[iCurrentElement].second_r = double.MaxValue;
+                    else m_lMyunits[iCurrentElement].second_r = double.MinValue;
                 else m_lMyunits[iCurrentElement].second_r = (m_lMyunits[iCurrentElement].y - y) / (x - m_lMyunits[iCurrentElement].x);
                 m_lMyunits[iCurrentElement].IsSet = true;
                 m_Sost = sost.Create;
@@ -200,15 +223,22 @@ namespace Sagittarius
         private void El_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (m_Sost == sost.Play)
-                vShoot((int)(sender as Ellipse).Tag, false);
+                vShoot((int)(sender as Ellipse).Tag, true);
         }
 
         void vReset()
         {
-            for (int i = 0; i < m_lMyunits.Count; i++)
-                m_lMyunits[i].m_El.Tag = i;
-            for (int i = 0; i < m_lUnitsofEnemy.Count; i++)
-                m_lUnitsofEnemy[i].m_El.Tag = i;
+            List<List<Unit>> listoflists = new List<List<Unit>> { m_lMyunits, m_lUnitsofEnemy };
+            for (int i = 0; i < listoflists.Count; i++)
+                for (int j = 0; j < listoflists[i].Count; j++)
+                {
+                    listoflists[i][j].m_El.Tag = j;
+                    if (i == 0)
+                    {
+                        listoflists[i][j].m_l1.Tag = j;
+                        listoflists[i][j].m_l2.Tag = j;
+                    }
+                }
         }
 
         private void El_MouseDown(object sender, MouseButtonEventArgs e)
@@ -275,25 +305,28 @@ namespace Sagittarius
         void vShoot(int iNumberOfShooter, bool bOurShoot)
         {
             double k, b;
+            //var listofredlines = new List<Line> { redline1, redline2 };
+            //for (int i = 0; i < 2; i++)
+            //{
+            //    listofredlines[i] = new Line();
+            //    listofredlines[i].Stroke = Brushes.Black;
+            //    listofredlines[i].StrokeThickness = 2;
+            //}
             redline1 = new Line();
             redline2 = new Line();
             redline1.Stroke = Brushes.Black;
             redline1.StrokeThickness = 2;
             redline2.Stroke = Brushes.Black;
             redline2.StrokeThickness = 2;
+            k = m_lUnitsofEnemy[iNumberOfShooter].GetR();
+            b = m_lUnitsofEnemy[iNumberOfShooter].x * k + m_lUnitsofEnemy[iNumberOfShooter].y;
+            var listofhurtedunits = from u in m_lMyunits orderby u.x descending select u;
             if (bOurShoot)
             {
                 k = m_lMyunits[iNumberOfShooter].GetR();
                 b = (canvas.Width - m_lMyunits[iNumberOfShooter].x) * k + m_lMyunits[iNumberOfShooter].y;
-            }
-            else
-            {
-                k = m_lUnitsofEnemy[iNumberOfShooter].GetR();
-                b = m_lUnitsofEnemy[iNumberOfShooter].x * k + m_lUnitsofEnemy[iNumberOfShooter].y;
-            }
-            var listofhurtedunits = from u in m_lMyunits orderby u.x descending select u;
-            if (bOurShoot)
                 listofhurtedunits = from u in m_lUnitsofEnemy orderby u.x select u;
+            }
             double iB = b;
             double iK = k;
             if (!bOurShoot)
@@ -315,7 +348,6 @@ namespace Sagittarius
                             redline2.X1 = m_lUnitsofEnemy[iNumberOfShooter].x;
                             redline2.Y1 = m_lUnitsofEnemy[iNumberOfShooter].y;
                             redline2.X2 = 0;
-//                            var lines = from l in canvas.Children where (l as Line).Tag == u.m_El.Tag select l;
                         }
                         else
                         {
