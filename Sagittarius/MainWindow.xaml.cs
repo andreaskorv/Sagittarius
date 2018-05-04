@@ -24,6 +24,7 @@ namespace Sagittarius
         int iCount, iCurrentElement;
         double dR;
         byte iLevel;
+        const double dMaxAbsR = 1.5200;
         sost m_Sost;
         Line l1, redline1, redline2;
         Random rnd = new Random();
@@ -73,7 +74,10 @@ namespace Sagittarius
         {
             if (!m_bClean)
             {
-                vShoot(rnd.Next(0, m_lMyunits.Count - 1), m_bOurShoot);
+                int iNumberOfShooter = rnd.Next(0, m_lUnitsofEnemy.Count);
+                if (m_bOurShoot)
+                    iNumberOfShooter = rnd.Next(0, m_lMyunits.Count);
+                vShoot(iNumberOfShooter, m_bOurShoot);
                 if (m_bOurShoot)
                 {                    
                     if (m_lUnitsofEnemy.Count == 0)
@@ -135,10 +139,10 @@ namespace Sagittarius
                 {
                     if (x <= m_lMyunits[iCurrentElement].x)
                         if (y > m_lMyunits[iCurrentElement].y)
-                            m_lMyunits[iCurrentElement].first_r = double.MaxValue;
-                        else m_lMyunits[iCurrentElement].first_r = double.MinValue;
+                            m_lMyunits[iCurrentElement].first_r = dMaxAbsR;
+                        else m_lMyunits[iCurrentElement].first_r = -dMaxAbsR;
                     else
-                        m_lMyunits[iCurrentElement].first_r = (m_lMyunits[iCurrentElement].y - y) / (x - m_lMyunits[iCurrentElement].x);
+                        m_lMyunits[iCurrentElement].first_r = (y - m_lMyunits[iCurrentElement].y) / (x - m_lMyunits[iCurrentElement].x);
                     l1.Tag = iCurrentElement;
                     m_lMyunits[iCurrentElement].m_l1 = l1;
                     l1 = new Line();
@@ -155,9 +159,9 @@ namespace Sagittarius
                 double y = Mouse.GetPosition(canvas).Y;
                 if (x <= m_lMyunits[iCurrentElement].x)
                     if (y > m_lMyunits[iCurrentElement].y)
-                        m_lMyunits[iCurrentElement].second_r = double.MaxValue;
-                    else m_lMyunits[iCurrentElement].second_r = double.MinValue;
-                else m_lMyunits[iCurrentElement].second_r = (m_lMyunits[iCurrentElement].y - y) / (x - m_lMyunits[iCurrentElement].x);
+                        m_lMyunits[iCurrentElement].second_r = dMaxAbsR;
+                    else m_lMyunits[iCurrentElement].second_r = -dMaxAbsR;
+                else m_lMyunits[iCurrentElement].second_r = (y - m_lMyunits[iCurrentElement].y) / (x - m_lMyunits[iCurrentElement].x);
                 m_lMyunits[iCurrentElement].IsSet = true;
                 m_Sost = sost.Create;
                 l1.Tag = iCurrentElement;
@@ -181,6 +185,23 @@ namespace Sagittarius
             return true;
         }
 
+        private void vCorrect(Unit u)
+        {
+            if (u.first_r <= -dMaxAbsR)
+                u.first_r = -dMaxAbsR;
+            if (u.second_r <= -dMaxAbsR)
+                u.second_r = -dMaxAbsR;
+            if (u.first_r >= dMaxAbsR)
+                u.first_r = dMaxAbsR;
+            if (u.second_r >= dMaxAbsR)
+                u.second_r = dMaxAbsR;
+            double iX = Math.Max(u.m_l1.X2 - u.m_l1.X1, u.m_l2.X2 - u.m_l2.X1);
+            u.m_l1.X2 = u.m_l1.X1 + iX;
+            u.m_l1.Y2 = u.m_l1.Y1 + iX * u.first_r;
+            u.m_l2.X2 = u.m_l2.X1 + iX;
+            u.m_l2.Y2 = u.m_l2.Y1 + iX * u.second_r;
+        }
+
         private void vPrepare()
         {
             button1.IsEnabled = false;
@@ -188,6 +209,13 @@ namespace Sagittarius
             for (int i = 0; i < m_lMyunits.Count; i++)
             {
                 double x, y;
+                if (m_lMyunits[i].first_r > m_lMyunits[i].second_r)
+                {
+                    double temp = m_lMyunits[i].first_r;
+                    m_lMyunits[i].first_r = m_lMyunits[i].second_r;
+                    m_lMyunits[i].second_r = temp;
+                }
+                vCorrect(m_lMyunits[i]);
                 Random rnd = new Random();
                 do
                 {
@@ -213,10 +241,11 @@ namespace Sagittarius
                 Canvas.SetLeft(el, x - 20);
                 Canvas.SetTop(el, y - 20);
                 m_lUnitsofEnemy.Add(new Unit(x, y, el));
-                m_lUnitsofEnemy.Last().first_r = rnd.NextDouble() * 1.32;
-                m_lUnitsofEnemy.Last().second_r = rnd.NextDouble() * -1.32;
+                m_lUnitsofEnemy.Last().first_r = rnd.NextDouble() * -dMaxAbsR;
+                m_lUnitsofEnemy.Last().second_r = rnd.NextDouble() * dMaxAbsR;
             }
             m_Sost = sost.Play;
+            MessageBox.Show("Параметры углов выстрела немного скорректированы, чтобы снизить количество выстрелов, не попадающих по врагу");
             m_timer.Start();
         }
 
@@ -305,27 +334,23 @@ namespace Sagittarius
         void vShoot(int iNumberOfShooter, bool bOurShoot)
         {
             double k, b;
-            //var listofredlines = new List<Line> { redline1, redline2 };
-            //for (int i = 0; i < 2; i++)
-            //{
-            //    listofredlines[i] = new Line();
-            //    listofredlines[i].Stroke = Brushes.Black;
-            //    listofredlines[i].StrokeThickness = 2;
-            //}
             redline1 = new Line();
             redline2 = new Line();
             redline1.Stroke = Brushes.Black;
             redline1.StrokeThickness = 2;
             redline2.Stroke = Brushes.Black;
             redline2.StrokeThickness = 2;
-            k = m_lUnitsofEnemy[iNumberOfShooter].GetR();
-            b = m_lUnitsofEnemy[iNumberOfShooter].x * k + m_lUnitsofEnemy[iNumberOfShooter].y;
             var listofhurtedunits = from u in m_lMyunits orderby u.x descending select u;
             if (bOurShoot)
             {
                 k = m_lMyunits[iNumberOfShooter].GetR();
                 b = (canvas.Width - m_lMyunits[iNumberOfShooter].x) * k + m_lMyunits[iNumberOfShooter].y;
                 listofhurtedunits = from u in m_lUnitsofEnemy orderby u.x select u;
+            }
+            else
+            {
+                k = m_lUnitsofEnemy[iNumberOfShooter].GetR();
+                b = m_lUnitsofEnemy[iNumberOfShooter].x * k + m_lUnitsofEnemy[iNumberOfShooter].y;
             }
             double iB = b;
             double iK = k;
@@ -340,23 +365,21 @@ namespace Sagittarius
                 foreach (Unit u in listofhurtedunits)
                     if (u.IsHurt(iK, iB))
                     {
+                        redline1.X2 = canvas.Width;
+                        redline2.X2 = 0;
                         if (!bOurShoot)
                         {
                             redline1.X1 = u.x;
                             redline1.Y1 = u.y;
-                            redline1.X2 = canvas.Width;
                             redline2.X1 = m_lUnitsofEnemy[iNumberOfShooter].x;
                             redline2.Y1 = m_lUnitsofEnemy[iNumberOfShooter].y;
-                            redline2.X2 = 0;
                         }
                         else
                         {
-                            redline2.X1 = u.x;
-                            redline2.Y1 = u.y;
-                            redline2.X2 = 0;
                             redline1.X1 = m_lMyunits[iNumberOfShooter].x;
                             redline1.Y1 = m_lMyunits[iNumberOfShooter].y;
-                            redline1.X2 = canvas.Width;
+                            redline2.X1 = u.x;
+                            redline2.Y1 = u.y;
                         }
                         canvas.Children.Add(redline1);
                         canvasofenemies.Children.Add(redline2);
@@ -378,23 +401,21 @@ namespace Sagittarius
                         }
                         return;
                     }
+            redline1.X2 = canvas.Width;
+            redline2.X2 = 0;
             if (!bOurShoot)
             {
-                redline1.X2 = canvas.Width;
+                redline1.X1 = 0;
                 redline1.Y1 = b + k * canvas.Width;
-                redline2.X2 = 0;
                 redline2.X1 = m_lUnitsofEnemy[iNumberOfShooter].x;
                 redline2.Y1 = m_lUnitsofEnemy[iNumberOfShooter].y;
-                redline1.X1 = 0;
             }
             else
             {
-                redline2.X1 = canvasofenemies.Width;
-                redline2.Y1 = k * canvasofenemies.Width + b;
-                redline2.X2 = 0;
                 redline1.X1 = m_lMyunits[iNumberOfShooter].x;
                 redline1.Y1 = m_lMyunits[iNumberOfShooter].y;
-                redline1.X2 = canvas.Width;
+                redline2.X1 = canvasofenemies.Width;
+                redline2.Y1 = k * canvasofenemies.Width + b;
             }
             canvas.Children.Add(redline1);
             canvasofenemies.Children.Add(redline2);

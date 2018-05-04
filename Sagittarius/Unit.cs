@@ -25,30 +25,17 @@ namespace Sagittarius
             first_r = 0;
             second_r = 0;
             IsSet = false;
-//            first_r_ = null;
-//            second_r_ = null;
         }
 
         public double GetR()
         {
             Random rnd = new Random();
-            return (first_r + (second_r - first_r) * rnd.NextDouble());
+            double for_return = first_r + (second_r - first_r) * rnd.NextDouble();
+            while (for_return < first_r || for_return > second_r)
+                for_return = (first_r + (second_r - first_r) * rnd.NextDouble());
+            return for_return;
         }
 
-        //public double[] rad
-        //{
-        //    set
-        //    {
-        //        first_r = value[0];
-        //        second_r = value[1];
-        //    }
-        //    get
-        //    {
-        //        if (first_r == 0 && second_r == 0)
-        //            return null;
-        //        else return new double[] { first_r, second_r };
-        //    }
-        //}
         public bool IsCheck(double x, double y)
         {
             return Math.Sqrt(Math.Pow((this.x - x), 2) + Math.Pow((this.y - y), 2)) > radius;
