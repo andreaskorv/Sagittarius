@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Sagittarius"
         mc:Ignorable="d"
-        Title="MainWindow" Height="700" Width="920">
+        Title="MainWindow" Height="730" Width="920">
     <Grid>
         <Canvas x:Name="canvas" HorizontalAlignment="Left" Height="600" MouseMove="canvas_MouseMove" MouseDown="Canvas_MouseDown" MouseUp="canvas_MouseUp" VerticalAlignment="Top" Width="456">
             <Canvas.Background>
@@ -17,7 +17,9 @@
                 <ImageBrush x:Name="brush1"/>
             </Canvas.Background>
         </Canvas>
-        <Button x:Name="button1" Content="Настроить угол выстрела" HorizontalAlignment="Left" Height="45" Margin="47,615,0,0" VerticalAlignment="Top" Width="173" Click="button1_Click"/>
-        <Button x:Name="button" Content="Играть" HorizontalAlignment="Left" Height="45" IsEnabled="False" Margin="252,615,0,0" VerticalAlignment="Top" Width="173" Click="button_Click"/>
+        <Button x:Name="button1" Content="Настроить угол выстрела" HorizontalAlignment="Left" Height="45" IsEnabled="False" Margin="10,633,0,0" VerticalAlignment="Top" Width="173" Click="button1_Click"/>
+        <Button x:Name="button" Content="Играть" HorizontalAlignment="Left" Height="45" IsEnabled="False" Margin="252,633,0,0" VerticalAlignment="Top" Width="173" Click="button_Click"/>
+        <Label x:Name="label1" Content="Количество оружия: " HorizontalAlignment="Left" Height="30" Margin="10,605,0,0" VerticalAlignment="Top" Width="173"/>
+        <Label x:Name="label2" Content="Количество оружия: " HorizontalAlignment="Right" Height="30" Margin="10,605,0,0" VerticalAlignment="Top" Width="173"/>
     </Grid>
 </Window>

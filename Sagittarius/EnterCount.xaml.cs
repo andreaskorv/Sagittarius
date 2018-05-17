@@ -28,14 +28,14 @@ namespace Sagittarius
 
         private void button_Click(object sender, RoutedEventArgs e)
         {
-            if (int.Parse(textBox.Text) < 10000)
+            int iForTryParse;
+            if (int.TryParse(textBox.Text, out iForTryParse) && int.Parse(textBox.Text) < 10000)
             {
                 iCount = int.Parse(textBox.Text);
                 bVisibility = (bool)checkBox.IsChecked;
                 DialogResult = true;
-                this.Close();
+                Close();
             }
-            else;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
+using System.Net;
+using System.Net.Sockets;
 using System.Windows.Shapes;
 
 namespace Sagittarius
@@ -21,10 +24,17 @@ namespace Sagittarius
     /// </summary>
     public partial class MainWindow : Window
     {
+        // параметры подключения к Интернету
+        private Socket Client;
+        private IPAddress ipAddress = null;
+        private int iPort = 0;
+        bool bIsOnline = false;
         int iCount, iCurrentElement;
-        double dR;
+        int iOurArmor;
+        int iArmorOfEnemy;
         byte iLevel;
         const double dMaxAbsR = 1.5200;
+        const double iX = 30;
         sost m_Sost;
         Line l1, redline1, redline2;
         Random rnd = new Random();
@@ -41,11 +51,28 @@ namespace Sagittarius
             if (ocr.ShowDialog() == true)
             {
                 iCount = ocr.iCount;
+                iOurArmor = iCount * 15;
+                iArmorOfEnemy = iOurArmor;
                 m_Sost = sost.Create;
                 bVisibility = ocr.bVisibility;
             }
+            else
+                Close();
             brush0.ImageSource = new BitmapImage(new Uri("pole1.jpg", UriKind.Relative));
             brush1.ImageSource = new BitmapImage(new Uri("pole2.jpg", UriKind.Relative));
+
+            // настройки подключения к Интернету
+
+            if (bIsOnline)
+            {
+                var streamReader = new StreamReader("net_settings.dat");
+                string[] buffer = streamReader.ReadToEnd().Split(':');
+                streamReader.Close();
+                ipAddress = IPAddress.Parse(buffer[0]);
+                iPort = int.Parse(buffer[1]);
+                Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                Client.Connect(ipAddress, iPort);
+            }
             l1 = new Line();
             l1.Tag = -1;
             l1.Stroke = Brushes.Black;
@@ -67,7 +94,10 @@ namespace Sagittarius
             m_lMyunits = new List<Unit>();
             m_lUnitsofEnemy = new List<Unit>();
             m_Sost = sost.Create;
-            button1.IsEnabled = true;
+            iOurArmor = iCount * 15;
+            iArmorOfEnemy = iCount * 15;
+            label1.Content = "Количество оружия: " + iOurArmor;
+            label2.Content = "Количество оружия: " + iArmorOfEnemy;
         }
 
         private void M_timer_Tick(object sender, EventArgs e)
@@ -78,6 +108,26 @@ namespace Sagittarius
                 if (m_bOurShoot)
                     iNumberOfShooter = rnd.Next(0, m_lMyunits.Count);
                 vShoot(iNumberOfShooter, m_bOurShoot);
+                if (iOurArmor == 0 && iArmorOfEnemy == 0)
+                    if (m_lMyunits.Count > m_lUnitsofEnemy.Count)
+                    {
+                        m_timer.Stop();
+                        if (iLevel < 3)
+                        {
+                            MessageBox.Show("Вы лидируете по очкам и выходите на " + (iLevel + 1) + " уровень!");
+                            iLevel++;
+                            vReload();
+                        }
+                        else
+                            MessageBox.Show("Вы лидируете по очкам и выигрываете!");
+                    }
+                    else if (m_lUnitsofEnemy.Count > m_lMyunits.Count)
+                    {
+                            m_timer.Stop();
+                            MessageBox.Show("Вы проиграли по очкам");
+                    }
+                    else
+                        ;
                 if (m_bOurShoot)
                 {                    
                     if (m_lUnitsofEnemy.Count == 0)
@@ -118,12 +168,14 @@ namespace Sagittarius
         {
             if (m_Sost == sost.Create && m_lMyunits.Count < iCount)
             {
+                button1.IsEnabled = true;
                 Ellipse el = new Ellipse();
                 canvas.Children.Add(el);
                 el.Height = 40;
                 el.Width = 40;
                 el.StrokeThickness = 1;
-                el.Fill = Brushes.Red;
+                el.Fill = new ImageBrush(new BitmapImage(new Uri("2.png", UriKind.Relative)));
+                //el.Fill = Brushes.Red;
                 el.Stroke = Brushes.Green;
                 el.MouseDown += El_MouseDown;
                 el.Tag = m_lMyunits.Count;
@@ -195,7 +247,6 @@ namespace Sagittarius
                 u.first_r = dMaxAbsR;
             if (u.second_r >= dMaxAbsR)
                 u.second_r = dMaxAbsR;
-            double iX = Math.Max(u.m_l1.X2 - u.m_l1.X1, u.m_l2.X2 - u.m_l2.X1);
             u.m_l1.X2 = u.m_l1.X1 + iX;
             u.m_l1.Y2 = u.m_l1.Y1 + iX * u.first_r;
             u.m_l2.X2 = u.m_l2.X1 + iX;
@@ -219,10 +270,8 @@ namespace Sagittarius
                 Random rnd = new Random();
                 do
                 {
-                    x = m_lMyunits[i].x;
-                    y = m_lMyunits[i].y;
-/*                    x = rnd.Next((int)canvasofenemies.Width);
-                    y = rnd.Next((int)canvasofenemies.Height);*/
+                    x = rnd.NextDouble() * canvasofenemies.Width;
+                    y = rnd.NextDouble() * canvasofenemies.Height;
                 }
                 while (!IsPlaceAvailable(x, y));
                 Ellipse el = new Ellipse();
@@ -333,6 +382,26 @@ namespace Sagittarius
 
         void vShoot(int iNumberOfShooter, bool bOurShoot)
         {
+            if (bOurShoot)
+            {
+                if (iOurArmor == 0)
+                    return;
+                else
+                {
+                    iOurArmor--;
+                    label1.Content = "Количество оружия: " + iOurArmor;
+                }
+            }
+            else
+            {
+                if (iArmorOfEnemy == 0)
+                    return;
+                else
+                {
+                    iArmorOfEnemy--;
+                    label2.Content = "Количество оружия: " + iArmorOfEnemy;
+                }
+            }
             double k, b;
             redline1 = new Line();
             redline2 = new Line();
