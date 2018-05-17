@@ -73,6 +73,7 @@ namespace Sagittarius
                 else
                     second_r = (y - this.y) / (x - this.x);
             }
+            IsSet = true;
         }
 
         public void vCorrect(bool IsUnitOur)

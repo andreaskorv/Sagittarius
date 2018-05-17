@@ -193,9 +193,9 @@ namespace Sagittarius
                 double y = Mouse.GetPosition(m_CanvasUnderWork).Y;
                 if (m_lUnitsUnderWork[iCurrentElement].IsCheck(x, y))
                 {
-                    m_lUnitsUnderWork[iCurrentElement].SetFirstR(x, y, bIsSetEnemy);
                     l1.Tag = iCurrentElement;
                     m_lUnitsUnderWork[iCurrentElement].m_l1 = l1;
+                    m_lUnitsUnderWork[iCurrentElement].SetFirstR(x, y, bIsSetEnemy);
                     l1 = new Line();
                     l1.Tag = -1;
                     l1.Stroke = Brushes.Black;
@@ -208,11 +208,10 @@ namespace Sagittarius
             {
                 double x = Mouse.GetPosition(m_CanvasUnderWork).X;
                 double y = Mouse.GetPosition(m_CanvasUnderWork).Y;
-                m_lUnitsUnderWork[iCurrentElement].SetSecondR(x, y, bIsSetEnemy);
-                m_lUnitsUnderWork[iCurrentElement].IsSet = true;
                 m_Sost = sost.Create;
                 l1.Tag = iCurrentElement;
                 m_lUnitsUnderWork[iCurrentElement].m_l2 = l1;
+                m_lUnitsUnderWork[iCurrentElement].SetSecondR(x, y, bIsSetEnemy);
                 l1 = new Line();
                 l1.Tag = -1;
                 l1.Stroke = Brushes.Black;
