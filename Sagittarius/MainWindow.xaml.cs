@@ -28,28 +28,30 @@ namespace Sagittarius
         private Socket Client;
         private IPAddress ipAddress = null;
         private int iPort = 0;
-        bool bIsOnline = false;
-        int iCount, iCurrentElement;
-        int iOurArmor;
-        int iArmorOfEnemy;
+        bool bIsOnline = false, bIsPC, bVisibility, m_bOurShoot, m_bClean;
+        bool? bIsSetEnemy = false;
+        int iCount, iCurrentElement, iOurArmor, iArmorOfEnemy;
         byte iLevel;
-        const double dMaxAbsR = 1.5200;
-        const double iX = 30;
+//        const double dMaxAbsR = 1.5200, iX = 30;
         sost m_Sost;
+        ImageBrush m_brushForOurUnit, m_brushForEnemyUnit;
         Line l1, redline1, redline2;
         Random rnd = new Random();
-        bool bVisibility, m_bOurShoot, m_bClean;
-        List<Unit> m_lMyunits = new List<Unit>();
-        List<Unit> m_lUnitsofEnemy = new List<Unit>();
+        Canvas m_CanvasUnderWork;
+        List<Unit> m_lMyunits = new List<Unit>(), m_lUnitsofEnemy = new List<Unit>(), m_lUnitsUnderWork;
         System.Windows.Forms.Timer m_timer;
         public MainWindow()
         {
             iLevel = 0;
+            m_brushForOurUnit = new ImageBrush(new BitmapImage(new Uri("00.png", UriKind.Relative)));
+            m_brushForEnemyUnit = new ImageBrush(new BitmapImage(new Uri("01.png", UriKind.Relative)));
             m_bClean = true;
             EnterCount ocr = new EnterCount();
             InitializeComponent();
             if (ocr.ShowDialog() == true)
             {
+                bIsPC = (bool)ocr.checkBox1.IsChecked;
+                if (bIsPC) button.Content = "Настроить вражеские юниты";
                 iCount = ocr.iCount;
                 iOurArmor = iCount * 15;
                 iArmorOfEnemy = iOurArmor;
@@ -60,6 +62,8 @@ namespace Sagittarius
                 Close();
             brush0.ImageSource = new BitmapImage(new Uri("pole1.jpg", UriKind.Relative));
             brush1.ImageSource = new BitmapImage(new Uri("pole2.jpg", UriKind.Relative));
+            m_CanvasUnderWork = canvas;
+            m_lUnitsUnderWork = m_lMyunits;
 
             // настройки подключения к Интернету
 
@@ -84,13 +88,16 @@ namespace Sagittarius
 
         private void vReload()
         {
+            canvas.MouseDown += Canvas_MouseDown;
+            canvas.MouseMove += canvas_MouseMove;
+            canvasofenemies.MouseDown -= Canvas_MouseDown;
+            canvasofenemies.MouseMove -= canvas_MouseMove;
             canvas.Children.Clear();
             canvasofenemies.Children.Clear();
-            if (iLevel == 1)
-            {
-                brush0.ImageSource = new BitmapImage(new Uri("sea1.jpg", UriKind.Relative));
-                brush1.ImageSource = new BitmapImage(new Uri("sea2.jpg", UriKind.Relative));
-            }
+            m_brushForOurUnit.ImageSource = new BitmapImage(new Uri(iLevel.ToString() + "0.png", UriKind.Relative));
+            m_brushForEnemyUnit.ImageSource = new BitmapImage(new Uri(iLevel.ToString() + "1.png", UriKind.Relative));
+            brush0.ImageSource = new BitmapImage(new Uri(iLevel.ToString() + "1.jpg", UriKind.Relative));
+            brush1.ImageSource = new BitmapImage(new Uri(iLevel.ToString() + "2.jpg", UriKind.Relative));
             m_lMyunits = new List<Unit>();
             m_lUnitsofEnemy = new List<Unit>();
             m_Sost = sost.Create;
@@ -121,13 +128,11 @@ namespace Sagittarius
                         else
                             MessageBox.Show("Вы лидируете по очкам и выигрываете!");
                     }
-                    else if (m_lUnitsofEnemy.Count > m_lMyunits.Count)
+                    else
                     {
                             m_timer.Stop();
                             MessageBox.Show("Вы проиграли по очкам");
                     }
-                    else
-                        ;
                 if (m_bOurShoot)
                 {                    
                     if (m_lUnitsofEnemy.Count == 0)
@@ -166,63 +171,53 @@ namespace Sagittarius
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (m_Sost == sost.Create && m_lMyunits.Count < iCount)
+            if (m_Sost == sost.Create && m_lUnitsUnderWork.Count < iCount)
             {
                 button1.IsEnabled = true;
                 Ellipse el = new Ellipse();
-                canvas.Children.Add(el);
-                el.Height = 40;
-                el.Width = 40;
-                el.StrokeThickness = 1;
-                el.Fill = new ImageBrush(new BitmapImage(new Uri("2.png", UriKind.Relative)));
-                //el.Fill = Brushes.Red;
+                m_lUnitsUnderWork.Add(new Unit(Mouse.GetPosition(m_CanvasUnderWork).X, Mouse.GetPosition(m_CanvasUnderWork).Y, el));
+                m_CanvasUnderWork.Children.Add(el);
+                if (m_CanvasUnderWork == canvas)
+                    el.Fill = m_brushForOurUnit;
+                else
+                    el.Fill = m_brushForEnemyUnit;
                 el.Stroke = Brushes.Green;
                 el.MouseDown += El_MouseDown;
-                el.Tag = m_lMyunits.Count;
-                Canvas.SetLeft(el, Mouse.GetPosition(canvas).X - 20);
-                Canvas.SetTop(el, Mouse.GetPosition(canvas).Y - 20);
-                m_lMyunits.Add(new Unit(Mouse.GetPosition(canvas).X, Mouse.GetPosition(canvas).Y, el));
+                el.Tag = m_lUnitsUnderWork.Count;
+                Canvas.SetLeft(el, m_lUnitsUnderWork.Last().x - 20);
+                Canvas.SetTop(el, m_lUnitsUnderWork.Last().y - 20);
             }
             else if (m_Sost==sost.Set1)
             {
-                double x = Mouse.GetPosition(canvas).X;
-                double y = Mouse.GetPosition(canvas).Y;
-                if (m_lMyunits[iCurrentElement].IsCheck(x, y))
+                double x = Mouse.GetPosition(m_CanvasUnderWork).X;
+                double y = Mouse.GetPosition(m_CanvasUnderWork).Y;
+                if (m_lUnitsUnderWork[iCurrentElement].IsCheck(x, y))
                 {
-                    if (x <= m_lMyunits[iCurrentElement].x)
-                        if (y > m_lMyunits[iCurrentElement].y)
-                            m_lMyunits[iCurrentElement].first_r = dMaxAbsR;
-                        else m_lMyunits[iCurrentElement].first_r = -dMaxAbsR;
-                    else
-                        m_lMyunits[iCurrentElement].first_r = (y - m_lMyunits[iCurrentElement].y) / (x - m_lMyunits[iCurrentElement].x);
+                    m_lUnitsUnderWork[iCurrentElement].SetFirstR(x, y, bIsSetEnemy);
                     l1.Tag = iCurrentElement;
-                    m_lMyunits[iCurrentElement].m_l1 = l1;
+                    m_lUnitsUnderWork[iCurrentElement].m_l1 = l1;
                     l1 = new Line();
                     l1.Tag = -1;
                     l1.Stroke = Brushes.Black;
                     l1.StrokeThickness = 2;
-                    canvas.Children.Add(l1);
+                    m_CanvasUnderWork.Children.Add(l1);
                     m_Sost = sost.Set2;
                 }
             }
             else if (m_Sost == sost.Set2)
             {
-                double x = Mouse.GetPosition(canvas).X;
-                double y = Mouse.GetPosition(canvas).Y;
-                if (x <= m_lMyunits[iCurrentElement].x)
-                    if (y > m_lMyunits[iCurrentElement].y)
-                        m_lMyunits[iCurrentElement].second_r = dMaxAbsR;
-                    else m_lMyunits[iCurrentElement].second_r = -dMaxAbsR;
-                else m_lMyunits[iCurrentElement].second_r = (y - m_lMyunits[iCurrentElement].y) / (x - m_lMyunits[iCurrentElement].x);
-                m_lMyunits[iCurrentElement].IsSet = true;
+                double x = Mouse.GetPosition(m_CanvasUnderWork).X;
+                double y = Mouse.GetPosition(m_CanvasUnderWork).Y;
+                m_lUnitsUnderWork[iCurrentElement].SetSecondR(x, y, bIsSetEnemy);
+                m_lUnitsUnderWork[iCurrentElement].IsSet = true;
                 m_Sost = sost.Create;
                 l1.Tag = iCurrentElement;
-                m_lMyunits[iCurrentElement].m_l2 = l1;
+                m_lUnitsUnderWork[iCurrentElement].m_l2 = l1;
                 l1 = new Line();
                 l1.Tag = -1;
                 l1.Stroke = Brushes.Black;
                 l1.StrokeThickness = 2;
-                canvas.Children.Add(l1);
+                m_CanvasUnderWork.Children.Add(l1);
                 button1.IsEnabled = true;
                 if (IsUnitsSet())
                     button.IsEnabled = true;
@@ -237,61 +232,57 @@ namespace Sagittarius
             return true;
         }
 
-        private void vCorrect(Unit u)
-        {
-            if (u.first_r <= -dMaxAbsR)
-                u.first_r = -dMaxAbsR;
-            if (u.second_r <= -dMaxAbsR)
-                u.second_r = -dMaxAbsR;
-            if (u.first_r >= dMaxAbsR)
-                u.first_r = dMaxAbsR;
-            if (u.second_r >= dMaxAbsR)
-                u.second_r = dMaxAbsR;
-            u.m_l1.X2 = u.m_l1.X1 + iX;
-            u.m_l1.Y2 = u.m_l1.Y1 + iX * u.first_r;
-            u.m_l2.X2 = u.m_l2.X1 + iX;
-            u.m_l2.Y2 = u.m_l2.Y1 + iX * u.second_r;
-        }
+        
 
         private void vPrepare()
         {
             button1.IsEnabled = false;
             button.IsEnabled = false;
-            for (int i = 0; i < m_lMyunits.Count; i++)
+            if (bIsPC)
             {
-                double x, y;
-                if (m_lMyunits[i].first_r > m_lMyunits[i].second_r)
+                for (int i = 0; i < m_lMyunits.Count; i++)
                 {
-                    double temp = m_lMyunits[i].first_r;
-                    m_lMyunits[i].first_r = m_lMyunits[i].second_r;
-                    m_lMyunits[i].second_r = temp;
+                    m_lMyunits[i].vCorrect(true);
+                    m_lUnitsofEnemy[i].vCorrect(false);
                 }
-                vCorrect(m_lMyunits[i]);
-                Random rnd = new Random();
-                do
+            }
+            else {
+                for (int i = 0; i < m_lMyunits.Count; i++)
                 {
-                    x = rnd.NextDouble() * canvasofenemies.Width;
-                    y = rnd.NextDouble() * canvasofenemies.Height;
+                    double x, y;
+                    if (m_lMyunits[i].first_r > m_lMyunits[i].second_r)
+                    {
+                        double temp = m_lMyunits[i].first_r;
+                        m_lMyunits[i].first_r = m_lMyunits[i].second_r;
+                        m_lMyunits[i].second_r = temp;
+                    }
+                    m_lMyunits[i].vCorrect(true);
+                    Random rnd = new Random();
+                    do
+                    {
+                        x = rnd.NextDouble() * canvasofenemies.Width;
+                        y = rnd.NextDouble() * canvasofenemies.Height;
+                    }
+                    while (!IsPlaceAvailable(x, y));
+                    Ellipse el = new Ellipse();
+                    canvasofenemies.Children.Add(el);
+                    el.Height = 40;
+                    if (bVisibility)
+                        el.Visibility = Visibility.Visible;
+                    else
+                        el.Visibility = Visibility.Hidden;
+                    el.Width = 40;
+                    el.StrokeThickness = 1;
+                    el.Fill = m_brushForEnemyUnit;
+                    el.Stroke = Brushes.Green;
+                    el.Tag = m_lUnitsofEnemy.Count;
+                    el.MouseLeftButtonDown += El_MouseLeftButtonDown;
+                    Canvas.SetLeft(el, x - 20);
+                    Canvas.SetTop(el, y - 20);
+                    m_lUnitsofEnemy.Add(new Unit(x, y, el));
+                    m_lUnitsofEnemy.Last().first_r = rnd.NextDouble() * -Unit.dMaxAbsR;
+                    m_lUnitsofEnemy.Last().second_r = rnd.NextDouble() * Unit.dMaxAbsR;
                 }
-                while (!IsPlaceAvailable(x, y));
-                Ellipse el = new Ellipse();
-                canvasofenemies.Children.Add(el);
-                el.Height = 40;
-                if (bVisibility)
-                    el.Visibility = Visibility.Visible;
-                else
-                    el.Visibility = Visibility.Hidden;
-                el.Width = 40;
-                el.StrokeThickness = 1;
-                el.Fill = Brushes.Red;
-                el.Stroke = Brushes.Green;
-                el.Tag = m_lUnitsofEnemy.Count;
-                el.MouseLeftButtonDown += El_MouseLeftButtonDown;
-                Canvas.SetLeft(el, x - 20);
-                Canvas.SetTop(el, y - 20);
-                m_lUnitsofEnemy.Add(new Unit(x, y, el));
-                m_lUnitsofEnemy.Last().first_r = rnd.NextDouble() * -dMaxAbsR;
-                m_lUnitsofEnemy.Last().second_r = rnd.NextDouble() * dMaxAbsR;
             }
             m_Sost = sost.Play;
             MessageBox.Show("Параметры углов выстрела немного скорректированы, чтобы снизить количество выстрелов, не попадающих по врагу");
@@ -325,12 +316,12 @@ namespace Sagittarius
             if (m_Sost == sost.Set)
             {
                 Line l2 = new Line();
-                if (!canvas.Children.Contains(l1)) canvas.Children.Add(l1);
+                if (!m_CanvasUnderWork.Children.Contains(l1)) m_CanvasUnderWork.Children.Add(l1);
                 m_Sost = sost.Set1;
                 iCurrentElement = (int)(sender as Ellipse).Tag;
-                for (int i=canvas.Children.Count-1; i>=0; i--)
-                    if (canvas.Children[i].GetType() == l2.GetType() && (int)((canvas.Children[i] as Line).Tag) == iCurrentElement)
-                        canvas.Children.Remove(canvas.Children[i]);
+                for (int i= m_CanvasUnderWork.Children.Count-1; i>=0; i--)
+                    if (m_CanvasUnderWork.Children[i].GetType() == l2.GetType() && (int)((m_CanvasUnderWork.Children[i] as Line).Tag) == iCurrentElement)
+                        m_CanvasUnderWork.Children.Remove(m_CanvasUnderWork.Children[i]);
             }
             else if (m_Sost==sost.Create)
             {
@@ -341,9 +332,9 @@ namespace Sagittarius
 
         private bool IsUnitsSet()
         {
-            if (m_lMyunits.Count == iCount)
+            if (m_lUnitsUnderWork.Count == iCount)
             {
-                foreach (Unit u in m_lMyunits)
+                foreach (Unit u in m_lUnitsUnderWork)
                     if (!u.IsSet)
                         return false;
                 return true;
@@ -355,27 +346,27 @@ namespace Sagittarius
         {
             if (m_Sost == sost.Set1 || m_Sost == sost.Set2)
             {
-                l1.X1 = m_lMyunits[iCurrentElement].x;
-                l1.Y1 = m_lMyunits[iCurrentElement].y;
-                l1.X2 = Mouse.GetPosition(canvas).X;
-                l1.Y2 = Mouse.GetPosition(canvas).Y;
+                l1.X1 = m_lUnitsUnderWork[iCurrentElement].x;
+                l1.Y1 = m_lUnitsUnderWork[iCurrentElement].y;
+                l1.X2 = Mouse.GetPosition(m_CanvasUnderWork).X;
+                l1.Y2 = Mouse.GetPosition(m_CanvasUnderWork).Y;
             }
             else if (m_Sost==sost.MoveUnit)
             {
-                double x = Mouse.GetPosition(canvas).X;
-                double y = Mouse.GetPosition(canvas).Y;
-                Canvas.SetLeft(m_lMyunits[iCurrentElement].m_El, Mouse.GetPosition(canvas).X - 20);
-                Canvas.SetTop(m_lMyunits[iCurrentElement].m_El, Mouse.GetPosition(canvas).Y - 20);
-                foreach (UIElement uie in canvas.Children)
+                double x = Mouse.GetPosition(m_CanvasUnderWork).X;
+                double y = Mouse.GetPosition(m_CanvasUnderWork).Y;
+                Canvas.SetLeft(m_lUnitsUnderWork[iCurrentElement].m_El, Mouse.GetPosition(m_CanvasUnderWork).X - 20);
+                Canvas.SetTop(m_lUnitsUnderWork[iCurrentElement].m_El, Mouse.GetPosition(m_CanvasUnderWork).Y - 20);
+                foreach (UIElement uie in m_CanvasUnderWork.Children)
                     if (uie.GetType() == l1.GetType() && (int)((uie as Line).Tag) == iCurrentElement)
                     {
-                        (uie as Line).X1 += (x - m_lMyunits[iCurrentElement].x);
-                        (uie as Line).X2 += (x - m_lMyunits[iCurrentElement].x);
-                        (uie as Line).Y1 += (y - m_lMyunits[iCurrentElement].y);
-                        (uie as Line).Y2 += (y - m_lMyunits[iCurrentElement].y);
+                        (uie as Line).X1 += (x - m_lUnitsUnderWork[iCurrentElement].x);
+                        (uie as Line).X2 += (x - m_lUnitsUnderWork[iCurrentElement].x);
+                        (uie as Line).Y1 += (y - m_lUnitsUnderWork[iCurrentElement].y);
+                        (uie as Line).Y2 += (y - m_lUnitsUnderWork[iCurrentElement].y);
                     }
-                m_lMyunits[iCurrentElement].x = x;
-                m_lMyunits[iCurrentElement].y = y;
+                m_lUnitsUnderWork[iCurrentElement].x = x;
+                m_lUnitsUnderWork[iCurrentElement].y = y;
                 // вписать сюда код перемещения юнита
             }
         }
@@ -418,7 +409,7 @@ namespace Sagittarius
             }
             else
             {
-                k = m_lUnitsofEnemy[iNumberOfShooter].GetR();
+                k = -m_lUnitsofEnemy[iNumberOfShooter].GetR();
                 b = m_lUnitsofEnemy[iNumberOfShooter].x * k + m_lUnitsofEnemy[iNumberOfShooter].y;
             }
             double iB = b;
@@ -502,7 +493,23 @@ namespace Sagittarius
 
         private void button_Click(object sender, RoutedEventArgs e)
         {
-            vPrepare();
+            if (bIsPC && bIsSetEnemy==false)
+            {
+                button.IsEnabled = false;
+                button1.IsEnabled = false;
+                button.Content = "Играть";
+                bIsSetEnemy = true;
+                canvas.Children.Remove(l1);
+                canvasofenemies.MouseDown += Canvas_MouseDown;
+                canvasofenemies.MouseMove += canvas_MouseMove;
+                canvas.MouseDown -= Canvas_MouseDown;
+                canvas.MouseMove -= canvas_MouseMove;
+                m_Sost = sost.Create;
+                m_CanvasUnderWork = canvasofenemies;
+                m_lUnitsUnderWork = m_lUnitsofEnemy;
+            }
+            else
+                vPrepare();
         }
 
         private void canvas_MouseUp(object sender, MouseButtonEventArgs e)
